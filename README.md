@@ -1,469 +1,186 @@
-# Tabular Foundation Model Benchmark
+# Tabular foundation model benchmark
 
-A practical benchmark comparing modern **tabular foundation models** with established machine learning techniques such as XGBoost, LightGBM, CatBoost, Random Forest, and Logistic Regression.
+Can a pretrained tabular model compete with a classical machine-learning model on
+an unfamiliar dataset? This project explores that question across three common tasks:
+binary classification, regression, and multiclass classification.
 
-The goal of this project is not just to answer **which model achieves the best predictive performance**, but also to understand the trade-offs between:
+We compare **Mitra v2** and **TabPFN-3.5-Fast** with **XGBoost** and **LightGBM**.
+The aim is to understand how their predictive performance compares, how much feature
+engineering helps, and what it takes to run them. Each experiment has its own notebook
+with an explanation of the task, measured results, and comparison plots.
 
-- predictive performance
-- training and inference time
-- hardware requirements
-- preprocessing effort
-- hyperparameter tuning
-- dataset size
-- developer experience
+All **21 model variants** have been evaluated on the full datasets. You can read the
+[results report](results/benchmark_results.md) or browse the executed notebooks without
+running the experiments yourself.
 
-The benchmark focuses on three modern tabular foundation models:
+## Methodology
 
-- **Mitra-v2**
-- **TabFM**
-- **TabPFN**
+### Datasets and tasks
 
-and compares them against widely used classical ML baselines.
+The benchmark uses three public UCI datasets. Feature counts below refer to the
+original inputs, before encoding or feature engineering.
 
----
+| Dataset | Prediction task | Rows | Features | Primary metric | Notebook |
+| --- | --- | ---: | ---: | --- | --- |
+| Online Shoppers Purchasing Intention | Will a browsing session end in a purchase? | 12,330 | 17 | ROC-AUC ↑ | [Binary classification](notebooks/01_binary_classification.ipynb) |
+| Seoul Bike Sharing Demand | How many bikes are rented in an hour? | 8,760 | 13 | RMSE ↓ | [Regression](notebooks/02_regression.ipynb) |
+| Dry Bean | Which of seven bean varieties does a sample belong to? | 13,611 | 16 | Macro-F1 ↑ | [Multiclass classification](notebooks/03_multiclass_classification.ipynb) |
 
-## Motivation
+Higher ROC-AUC and macro-F1 scores are better; lower RMSE is better. The notebooks
+also report supporting metrics, such as precision and recall for binary classification,
+MAE and R² for regression, and accuracy and weighted-F1 for multiclass classification.
 
-Gradient-boosted decision trees such as **XGBoost, LightGBM, and CatBoost** have dominated tabular machine learning for years.
+### A shared evaluation protocol
 
-Recently, tabular foundation models have introduced a different approach.
+Every model receives the same **60% training / 20% validation / 20% test split**, using
+random seed 42. Classification splits preserve class proportions. All source rows are
+retained, and any preprocessing that learns from data is fitted on training rows only.
 
-Instead of learning every problem entirely from scratch, these models are pretrained across large collections of synthetic or real tabular tasks and attempt to transfer that prior knowledge to unseen datasets.
+Training data is used to fit classical models and provide context for foundation models.
+Validation data selects the classical models' hyperparameters. The test set is held back
+for final evaluation and does not influence preprocessing or model selection.
 
-This raises several interesting questions:
+The Seoul Bike experiment uses a random split and observed weather to study
+retrospective prediction. Its results do not measure future-demand forecasting, which
+would require a chronological split and inputs available at forecast time.
 
-- Can tabular foundation models outperform well-tuned gradient boosting?
-- How well do they perform with very little training data?
-- How much hyperparameter tuning do traditional models need to remain competitive?
-- What is the runtime and hardware cost of foundation models?
-- Are the gains large enough to justify their additional computational requirements?
-- Which approach would be more practical for a real-world ML project?
+### Models and feature engineering
 
-This repository explores these questions experimentally.
+**XGBoost and LightGBM** use documented, dataset-specific features and a small search
+of four hyperparameter configurations each. The best configuration is selected using
+the validation set. A simple dummy model provides a reference score for each task.
 
----
+**Mitra v2 and TabPFN** use frozen pretrained weights, with labeled training examples
+supplied as context. Here, “zero-shot” means no task-specific fine-tuning of those
+weights. Each foundation model is evaluated in two settings:
 
-# Models
+- **Raw:** original features with the formatting needed for the model to run.
+- **Engineered:** original features plus the same kinds of handcrafted features used
+  by the classical models, such as browsing-session ratios or calendar features.
 
-## Tabular Foundation Models
+This gives seven evaluated variants per dataset: a dummy baseline, two classical
+models, and four foundation-model settings. Dataset splits, checkpoint identities,
+selected parameters, predictions, package versions, and timings are saved with the
+results so that each score can be traced back to its experiment.
 
-### Mitra-v2
+These comparisons describe performance on one fixed split per dataset. They do not
+include significance testing or establish that one model is best across all tabular tasks.
 
-Mitra-v2 is a compact tabular foundation model designed for classification and regression tasks.
+## How to run
 
-One interesting aspect of Mitra-v2 is its relatively small model size compared with many other foundation models, making it an interesting candidate for evaluating the trade-off between model size and predictive performance.
+The commands below assume a Linux or WSL shell and should be run from the repository
+root. Use **Python 3.12** and a **CUDA-capable GPU** to reproduce all full-data results.
+The reference runs used an NVIDIA RTX 3050 Laptop GPU with 6 GB of memory; classical
+models run on CPU. The full training sets exceed TabPFN's default CPU limit.
 
-### TabPFN
-
-TabPFN uses a pretrained transformer architecture designed specifically for tabular prediction.
-
-Instead of performing traditional iterative training on every dataset, it uses knowledge acquired during pretraining to perform inference on new tabular tasks.
-
-### TabFM
-
-TabFM is a large tabular foundation model designed to perform prediction using pretrained representations and in-context information from the target dataset.
-
-Its significantly larger scale also makes it useful for studying whether additional model capacity translates into meaningful gains on practical tabular problems.
-
----
-
-## Classical ML Baselines
-
-The benchmark includes the following commonly used algorithms:
-
-- Logistic Regression / Ridge Regression
-- Random Forest
-- XGBoost
-- LightGBM
-- CatBoost
-
-For gradient-boosting models, both **default configurations** and **hyperparameter-tuned configurations** may be evaluated.
-
-This allows comparison between:
-
-> Foundation models with minimal task-specific tuning
-
-and
-
-> Traditional ML models after explicit optimization for the target dataset.
-
----
-
-# Experimental Questions
-
-The experiments are designed around several research questions.
-
-## 1. Predictive Performance
-
-How do foundation models compare against established tree-based algorithms?
-
-Depending on the task, metrics include:
-
-### Classification
-
-- ROC-AUC
-- Accuracy
-- F1 Score
-- Log Loss
-- Macro F1 for multiclass problems
-
-### Regression
-
-- RMSE
-- MAE
-- R²
-
----
-
-## 2. Performance in Low-Data Settings
-
-Foundation models should theoretically benefit from knowledge acquired during pretraining.
-
-To test this, selected datasets are evaluated using different amounts of training data.
-
-Example:
-
-```text
-100 samples
-500 samples
-1,000 samples
-5,000 samples
-10,000 samples
-Full dataset
-```
-
-This experiment investigates whether foundation models provide a meaningful advantage when labeled data is scarce.
-
----
-
-## 3. Hyperparameter Tuning vs Foundation Models
-
-Gradient-boosting models often improve significantly after tuning.
-
-The benchmark therefore compares configurations such as:
-
-```text
-XGBoost — default
-XGBoost — 10 tuning trials
-XGBoost — 50 tuning trials
-XGBoost — 100 tuning trials
-```
-
-against foundation models with little or no task-specific tuning.
-
-This helps answer:
-
-> How much tuning effort is required before classical ML matches or exceeds a pretrained tabular foundation model?
-
----
-
-## 4. Runtime
-
-Predictive performance alone does not determine whether a model is practical.
-
-The benchmark records:
-
-- preprocessing time
-- training time
-- inference time
-- total experiment time
-
-Foundation models and traditional ML models have fundamentally different compute profiles, so this comparison is particularly important.
-
----
-
-## 5. Hardware Requirements
-
-Where possible, experiments also record:
-
-- CPU utilization
-- system RAM
-- GPU requirement
-- peak GPU VRAM
-- model/checkpoint size
-
-This provides a more realistic picture of the infrastructure required to use each model.
-
----
-
-## 6. Developer Experience
-
-Some differences cannot be represented by a single metric.
-
-The project also compares:
-
-- preprocessing requirements
-- categorical feature handling
-- missing-value handling
-- feature scaling requirements
-- hyperparameter tuning effort
-- installation complexity
-- GPU requirements
-- API usability
-
-The objective is to evaluate the **overall effort required to obtain a strong tabular model**, rather than focusing exclusively on leaderboard performance.
-
----
-
-# Datasets
-
-The benchmark uses multiple datasets covering different problem characteristics.
-
-The final dataset collection will include examples of:
-
-| Dataset Type | Purpose |
-|---|---|
-| Small binary classification | Evaluate low-data performance |
-| Medium binary classification | General benchmark |
-| Multiclass classification | Evaluate multiclass capability |
-| Imbalanced classification | Evaluate minority-class performance |
-| Small regression | Foundation-model performance with limited data |
-| Medium regression | Scaling behaviour |
-| Mixed categorical/numerical | Evaluate preprocessing and categorical handling |
-
-Potential datasets include:
-
-- Adult Income
-- Breast Cancer Wisconsin
-- Bank Marketing
-- Dry Bean
-- California Housing
-- Concrete Compressive Strength
-- additional OpenML datasets
-
-The exact dataset list may evolve as the benchmark develops.
-
----
-
-# Experimental Design
-
-To ensure a fair comparison, all models use the same dataset partitions.
-
-Where computationally feasible, experiments use:
-
-```text
-Repeated train/test splits
-or
-
-K-fold cross-validation
-```
-
-with fixed random seeds.
-
-Results are reported as averages along with variability where appropriate.
-
-Example:
-
-```text
-ROC-AUC: 0.912 ± 0.004
-```
-
-rather than relying on a single potentially lucky train/test split.
-
----
-
-# Repository Structure
-
-```text
-tabular-foundation-model-benchmark/
-│
-├── README.md
-├── requirements.txt
-├── .gitignore
-│
-├── notebooks/
-│   ├── 01_dataset_exploration.ipynb
-│   ├── 02_classical_ml.ipynb
-│   ├── 03_tabpfn.ipynb
-│   ├── 04_mitra_v2.ipynb
-│   ├── 05_tabfm.ipynb
-│   └── 06_results_analysis.ipynb
-│
-├── src/
-│   ├── data.py
-│   ├── metrics.py
-│   ├── benchmark.py
-│   └── utils.py
-│
-├── results/
-│   ├── benchmark_results.csv
-│   └── runtime_results.csv
-│
-└── figures/
-    ├── performance_comparison.png
-    ├── runtime_comparison.png
-    └── low_data_comparison.png
-```
-
----
-
-# Benchmark Output
-
-Each experiment produces a standardized result record.
-
-Example:
-
-```text
-dataset: adult
-task: classification
-model: xgboost
-seed: 42
-
-roc_auc: 0.912
-f1: 0.847
-accuracy: 0.869
-log_loss: 0.314
-
-training_seconds: 4.32
-prediction_seconds: 0.04
-
-peak_ram_mb: 1420
-peak_vram_mb: 0
-
-hyperparameter_tuning: true
-```
-
-Results from all experiments are combined into a common dataset for downstream analysis and visualization.
-
----
-
-# Planned Comparisons
-
-The benchmark will eventually include comparisons such as:
-
-### Overall model performance
-
-| Model | ROC-AUC | F1 | Training Time | Inference Time |
-|---|---:|---:|---:|---:|
-| Logistic Regression | TBD | TBD | TBD | TBD |
-| Random Forest | TBD | TBD | TBD | TBD |
-| XGBoost | TBD | TBD | TBD | TBD |
-| LightGBM | TBD | TBD | TBD | TBD |
-| CatBoost | TBD | TBD | TBD | TBD |
-| TabPFN | TBD | TBD | TBD | TBD |
-| Mitra-v2 | TBD | TBD | TBD | TBD |
-| TabFM | TBD | TBD | TBD | TBD |
-
----
-
-# Key Trade-offs
-
-Beyond accuracy, the final analysis will evaluate models across several dimensions.
-
-| Model | Tuning | Preprocessing | GPU | Training Required | Compute Cost |
-|---|---|---|---|---|---|
-| Logistic Regression | Low | High | No | Yes | Low |
-| Random Forest | Low | Medium | No | Yes | Low |
-| XGBoost | Medium/High | Medium | Optional | Yes | Medium |
-| LightGBM | Medium/High | Medium | Optional | Yes | Medium |
-| CatBoost | Medium | Low | Optional | Yes | Medium |
-| TabPFN | Low | Low | Recommended | Minimal | TBD |
-| Mitra-v2 | Low | Low | Recommended | Minimal | TBD |
-| TabFM | Low | Low | Recommended | Minimal | TBD |
-
-Actual conclusions will be updated after completing the benchmark.
-
----
-
-# Reproducing the Experiments
-
-Clone the repository:
+### 1. Set up the environment
 
 ```bash
-git clone https://github.com/<username>/tabular-foundation-model-benchmark.git
-
-cd tabular-foundation-model-benchmark
+python3.12 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip check
 ```
 
-Create a virtual environment:
+For platform-specific PyTorch installation, see the
+[environment and model-access guide](docs/model-runtime.md).
+[requirements-lock.txt](requirements-lock.txt) records the exact reference environment,
+including its CUDA-specific PyTorch build; it requires a compatible platform and wheel
+index. Allow roughly 5.8 GB for the environment and 900 MB for model weights, plus space
+for datasets and download caches. Small numerical differences across hardware are possible.
+
+### 2. Download and check the model weights
 
 ```bash
-python -m venv .venv
+.venv/bin/python scripts/smoke_models.py --models tabpfn mitra --device cpu --download --timeout 300
 ```
 
-Activate it.
+This downloads missing weights at the revisions pinned in
+[the checkpoint manifest](checkpoints/manifest.json), then checks inference on small
+synthetic examples. Weights and dataset downloads are stored locally in `.cache/`
+and excluded from Git.
 
-Linux/macOS:
+If TabPFN requires access approval, accept its terms and supply an authorized
+`HF_TOKEN` environment variable as explained in the
+[access guide](docs/model-runtime.md). The check writes `results/runtime-smoke.json`;
+exit code 0 indicates success, 1 a failure, and 2 a missing prerequisite or runtime limit.
+
+### 3. Run the three experiments
+
+Run these commands one at a time. Each starts a fresh notebook kernel and saves the
+executed notebook, including its outputs, in place.
 
 ```bash
-source .venv/bin/activate
+.venv/bin/python scripts/execute_notebook.py notebooks/01_binary_classification.ipynb --device cuda
+.venv/bin/python scripts/execute_notebook.py notebooks/02_regression.ipynb --device cuda
+.venv/bin/python scripts/execute_notebook.py notebooks/03_multiclass_classification.ipynb --device cuda
 ```
 
-Windows:
+Datasets download automatically on the first run. The notebooks expect model weights
+to have been cached in step 2. Each model variant has a 300-second budget for loading,
+tuning, and prediction; use `--model-timeout` to change it. In the reference runs, model
+wall times summed to approximately 7 minutes for Online Shoppers, 2 minutes for Seoul
+Bike, and 8 minutes for Dry Bean, excluding downloads and notebook overhead.
+
+To explore interactively, launch JupyterLab and select the project's Python environment:
 
 ```bash
-.venv\Scripts\activate
+.venv/bin/python -m jupyter lab
 ```
 
-Install dependencies:
+For a smaller CPU execution check, use the 500-row smoke profile:
 
 ```bash
-pip install -r requirements.txt
+.venv/bin/python scripts/execute_notebook.py notebooks/03_multiclass_classification.ipynb --profile smoke --device cpu --output /tmp/dry-bean-smoke.ipynb
 ```
 
-Launch Jupyter:
+Smoke results are saved separately from the full benchmark. Mitra may exceed its CPU
+budget even in this profile. A model that cannot run is marked **Not evaluated** with
+a reason; unexpected errors are marked **Failed** and fail the notebook's final check.
+
+### 4. Rebuild and verify the results report
 
 ```bash
-jupyter lab
+.venv/bin/python scripts/build_report.py
+.venv/bin/python scripts/build_report.py --check
+.venv/bin/python -m unittest discover -s tests -v
 ```
 
----
+The report builder uses saved predictions to verify metrics and rebuild
+[the results report](results/benchmark_results.md), without downloading data or fitting
+models again. `--check` confirms that the report is current without changing it.
+Tests that require source data or real model weights skip when those caches are absent.
 
-# Hardware
+## Where to find the results
 
-Experiments will document the hardware used for each benchmark run.
+The [results report](results/benchmark_results.md) brings together the methodology,
+score tables, plots, runtime comparisons, and limitations. For dataset-specific details:
 
-This is particularly important for foundation models because GPU memory requirements and inference cost may differ significantly from traditional ML algorithms.
+| Experiment | Reproduction guide | Saved results |
+| --- | --- | --- |
+| Online Shoppers | [Guide](docs/online-shoppers.md) | [Artifacts](results/online-shoppers/README.md) |
+| Seoul Bike | [Guide](docs/seoul-bike.md) | [Artifacts](results/seoul-bike/README.md) |
+| Dry Bean | [Guide](docs/dry-bean.md) | [Artifacts](results/dry-bean/README.md) |
 
-Hardware details will be added alongside the final results.
+Each `results/<dataset>/full/` directory contains metric CSVs, comparison plots, saved
+splits, and JSON files with predictions and experiment metadata. Dry Bean also includes
+per-class scores and confusion matrices. Keep these files together: they support report
+verification and allow plots to be regenerated without rerunning the models.
 
----
+## Repository layout
 
-# Results
+```text
+notebooks/             One executed notebook per prediction task
+src/                   Shared data, preprocessing, evaluation, and model code
+scripts/               Notebook runner, model checks, demos, and report builder
+tests/                 Reproducibility, leakage, model, and result checks
+docs/                  Dataset guides and implementation details
+datasets/              Dataset source manifests and checksums
+checkpoints/           Pinned model manifest; weights are downloaded separately
+results/               Measured results, plots, predictions, and summary report
+requirements*.txt      Dependency ranges and reference environment versions
+```
 
-🚧 **Work in progress**
-
-The benchmark is currently being developed.
-
-Results, visualizations, and detailed analysis will be added as experiments are completed.
-
-Planned visualizations include:
-
-- average model ranking across datasets
-- performance vs dataset size
-- performance vs training-data size
-- accuracy vs runtime
-- accuracy vs tuning budget
-- GPU memory consumption
-- inference latency
-- model performance across dataset types
-
----
-
-# Blog
-
-A detailed article based on the experiments will accompany this repository.
-
-The article will focus on the broader question:
-
-> **Are tabular foundation models ready to replace XGBoost, LightGBM, and CatBoost for practical machine learning?**
-
-Rather than identifying a single universal winner, the goal is to understand **when each approach makes sense**.
-
----
-
-# Disclaimer
-
-This project is intended as an independent practical benchmark.
-
-Foundation models differ significantly in architecture, pretraining strategy, supported dataset sizes, licensing, and computational requirements.
-
-Results should therefore be interpreted within the constraints of the datasets, hardware, model versions, and experimental settings used in this repository.
-
----
-
-# License
-
-The benchmark code in this repository is released under the MIT License unless otherwise specified.
-
-Individual models and datasets may have their own licenses and usage restrictions. Please refer to their respective repositories and documentation before commercial use.
+For more on the implementation, see the [shared workflow](docs/baseline-workflow.md),
+[classical models](docs/classical-models.md), [TabPFN](docs/tabpfn.md), and
+[Mitra](docs/mitra.md). Small synthetic examples can be generated with
+`.venv/bin/python scripts/demo_baseline.py`; their outputs are excluded from Git.

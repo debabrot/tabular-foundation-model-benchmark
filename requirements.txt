@@ -1,0 +1,36 @@
+# Target: Python 3.12; initial local benchmark excludes Google TabFM.
+# Direct dependency ranges, not a fully resolved lockfile.
+# See docs/model-runtime.md for GPU-aware PyTorch installation and locking.
+
+# Data, preprocessing, and classification/regression metrics.
+numpy>=1.26,<3
+pandas>=2.2,<3
+scipy>=1.11,<2
+scikit-learn>=1.6,<2
+pyarrow>=16,<25
+openml>=0.15,<0.16
+
+# Classical baselines (Random Forest, Logistic/Ridge use scikit-learn).
+xgboost>=2.1,<4
+lightgbm>=4.4,<5
+catboost>=1.2,<1.3
+
+# Foundation models: Mitra-v2 inference and TabPFN-3.5-Fast.
+# Only the Mitra extra; no AutoGluon umbrella/all/tabarena extras.
+autogluon.tabular[mitra]>=1.6,<1.7
+tabpfn>=9.0,<9.1
+torch>=2.5,<3
+huggingface-hub>=0.23,<2
+safetensors>=0.4,<1
+
+# Tuning, configuration, progress, and process resource measurement.
+optuna>=4,<5
+PyYAML>=6,<7
+tqdm>=4.66,<5
+psutil>=5.9,<8
+
+# Notebooks and result visualization.
+jupyterlab>=4,<5
+ipykernel>=6.29,<8
+matplotlib>=3.8,<4
+seaborn>=0.13,<0.14

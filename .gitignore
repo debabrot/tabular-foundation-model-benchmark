@@ -218,3 +218,28 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Downloaded benchmark weights; keep the small provenance manifest trackable.
+checkpoints/**/*.safetensors
+checkpoints/**/*.part
+
+# Runtime coordination lock; records remain trackable.
+results/.benchmark.lock
+
+# Regenerable synthetic demonstrations and local runtime checks.
+/results/*-demo/
+/results/runtime-smoke.json
+/results/*/smoke/
+
+# Local credentials and agent settings.
+/.aws/
+/.agents/
+/.codex/
+.env.*
+!.env.example
+
+# Other downloaded checkpoint formats; retain checkpoints/manifest.json.
+/checkpoints/**/*.pt
+/checkpoints/**/*.pth
+/checkpoints/**/*.ckpt
+/checkpoints/**/*.bin

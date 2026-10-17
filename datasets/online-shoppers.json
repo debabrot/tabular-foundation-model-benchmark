@@ -1,0 +1,17 @@
+{
+  "name": "Online Shoppers Purchasing Intention",
+  "uci_id": 468,
+  "source": "https://archive.ics.uci.edu/dataset/468/online+shoppers+purchasing+intention+dataset",
+  "doi": "https://doi.org/10.24432/C5F88Q",
+  "license": "CC BY 4.0",
+  "authors": "C. O. Sakar and Y. Kastro",
+  "download_url": "https://archive.ics.uci.edu/static/public/468/online%2Bshoppers%2Bpurchasing%2Bintention%2Bdataset.zip",
+  "archive_sha256": "2972e6184d3ad7beaaa831d9fc2b059dc3ee29df69d1ec593c466a5cd8485d14",
+  "csv_member": "online_shoppers_intention.csv",
+  "csv_sha256": "b3055ee355f59134d851d32641183cb4a8b45def7124d2f50442a042f358e0d9",
+  "rows": 12330,
+  "target": "Revenue",
+  "positive_rows": 1908,
+  "numeric_features": ["Administrative", "Administrative_Duration", "Informational", "Informational_Duration", "ProductRelated", "ProductRelated_Duration", "BounceRates", "ExitRates", "PageValues", "SpecialDay"],
+  "categorical_features": ["Month", "OperatingSystems", "Browser", "Region", "TrafficType", "VisitorType", "Weekend"]
+}

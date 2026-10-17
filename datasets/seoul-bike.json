@@ -1,0 +1,21 @@
+{
+  "name": "Seoul Bike Sharing Demand",
+  "uci_id": 560,
+  "source": "https://archive.ics.uci.edu/dataset/560/seoul+bike+sharing+demand",
+  "doi": "https://doi.org/10.24432/C5F62R",
+  "license": "CC BY 4.0",
+  "citation": "Seoul Bike Sharing Demand [Dataset]. (2020). UCI Machine Learning Repository.",
+  "download_url": "https://archive.ics.uci.edu/static/public/560/seoul+bike+sharing+demand.zip",
+  "archive_sha256": "139e9908f0a3544bb222386855c9ce107e96467306bb8e4ce936aab59e7baac4",
+  "csv_member": "SeoulBikeData.csv",
+  "csv_sha256": "373339b71a8935d69e9af0abf26a70744632119862eeb3919efb389a7b749c60",
+  "encoding": "cp1252",
+  "rows": 8760,
+  "target": "Rented Bike Count",
+  "date_format": "%d/%m/%Y",
+  "first_date": "2017-12-01",
+  "last_date": "2018-11-30",
+  "numeric_features": ["Hour", "Temperature(°C)", "Humidity(%)", "Wind speed (m/s)", "Visibility (10m)", "Dew point temperature(°C)", "Solar Radiation (MJ/m2)", "Rainfall(mm)", "Snowfall (cm)"],
+  "categorical_features": ["Seasons", "Holiday", "Functioning Day"],
+  "date_feature": "Date"
+}

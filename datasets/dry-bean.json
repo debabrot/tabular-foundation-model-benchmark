@@ -1,0 +1,16 @@
+{
+  "name": "Dry Bean",
+  "uci_id": 602,
+  "source": "https://archive.ics.uci.edu/dataset/602/dry+bean+dataset",
+  "doi": "https://doi.org/10.24432/C50S4B",
+  "license": "CC BY 4.0",
+  "authors": "Murat Koklu and Ilker Ali Ozkan",
+  "download_url": "https://archive.ics.uci.edu/static/public/602/dry+bean+dataset.zip",
+  "archive_sha256": "0a64eff5be87f48c3dbbfc0a12a56c5d5b5167ef8e61cd45d69b3e7c7130c06f",
+  "arff_member": "DryBeanDataset/Dry_Bean_Dataset.arff",
+  "arff_sha256": "b2a4a76a2aedfb8ed415adfc1bfc70b5f202cb00cb72e500766e364c14834014",
+  "rows": 13611,
+  "target": "Class",
+  "numeric_features": ["Area", "Perimeter", "MajorAxisLength", "MinorAxisLength", "AspectRation", "Eccentricity", "ConvexArea", "EquivDiameter", "Extent", "Solidity", "roundness", "Compactness", "ShapeFactor1", "ShapeFactor2", "ShapeFactor3", "ShapeFactor4"],
+  "class_counts": {"BARBUNYA": 1322, "BOMBAY": 522, "CALI": 1630, "DERMASON": 3546, "HOROZ": 1928, "SEKER": 2027, "SIRA": 2636}
+}
